@@ -35,3 +35,4 @@ const spec: EmbeddedGameSpec<Config> = {
 export default function ChateauGame() {
   return <EmbeddedGame spec={spec} />;
 }
+
