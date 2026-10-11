@@ -1,0 +1,105 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sensai_db
+      POSTGRES_USER: sensai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deployment/.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sensai -d sensai_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - sensai_net
+
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://sensai:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deployment/.env}@db:5432/sensai_db
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in deployment/.env}
+      CORS_ORIGINS: '["https://${DOMAIN:?Set DOMAIN in deployment/.env}"]'
+      SEED_DEMO_DATA: "false"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    networks:
+      - sensai_net
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.dashboard
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      KINEKIDS_API_URL: http://backend:8000
+      KINEKIDS_SITE_URL: https://${DOMAIN:?Set DOMAIN in deployment/.env}
+      KINEKIDS_DATA_SOURCE: api
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/analytics/_stcore/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    networks:
+      - sensai_net
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: /api
+        NEXT_PUBLIC_DASHBOARD_URL: https://${DOMAIN:?Set DOMAIN in deployment/.env}/analytics
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      dashboard:
+        condition: service_healthy
+    networks:
+      - sensai_net
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+      - dashboard
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in deployment/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in deployment/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - sensai_net
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  sensai_net:

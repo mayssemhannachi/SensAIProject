@@ -17,8 +17,12 @@ echo "✅ PostgreSQL is ready."
 echo "🔄 Running Alembic migrations..."
 alembic upgrade head
 
-echo "🌱 Seeding demo data (idempotent)..."
-python data_analysis/scripts/seed_backend.py || echo "⚠️  Seed skipped (already seeded or error)."
+if [ "${SEED_DEMO_DATA:-true}" = "true" ]; then
+  echo "🌱 Seeding demo data (idempotent)..."
+  python data_analysis/scripts/seed_backend.py || echo "⚠️  Seed skipped (already seeded or error)."
+else
+  echo "⏭️  Demo data seeding disabled."
+fi
 
 echo "🚀 Starting SensAI API on port 8000..."
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2

@@ -20,6 +20,7 @@ This repository contains the **complete, fully integrated platform**: backend RE
 10. [Troubleshooting & FAQ](#10-troubleshooting--faq)
 11. [Adding a New Game](#11-adding-a-new-game)
 12. [Project Team & Credits](#12-project-team--credits)
+13. [Hosted VPS Deployment](#13-hosted-vps-deployment)
 
 ---
 
@@ -277,3 +278,12 @@ python scripts/seed_backend.py --register
 | **Clinical BI Analytics & Platform Integration** | `feature/dashboard-analytics` |
 
 The `integration/plateforme-complete` branch unifies all subsystems into a single production-ready platform.
+
+---
+
+## 13. Hosted VPS Deployment
+
+To host the complete platform (web app, API, PostgreSQL, and Streamlit dashboard)
+on a Linux VPS with HTTPS, follow the [deployment guide](deployment/README.md).
+Patients and therapists access the hosted site through a browser; only the
+server administrator needs to run the deployment commands.

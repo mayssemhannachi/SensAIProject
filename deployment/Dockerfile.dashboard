@@ -1,0 +1,20 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/data_analysis \
+    HOME=/tmp
+
+WORKDIR /app
+
+COPY deployment/requirements.dashboard.txt ./requirements.dashboard.txt
+RUN pip install --no-cache-dir -r requirements.dashboard.txt
+
+COPY data_analysis/dashboard ./data_analysis/dashboard
+
+RUN useradd --no-create-home --uid 10001 sensai
+USER sensai
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "/app/data_analysis/dashboard/app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.baseUrlPath=analytics"]
