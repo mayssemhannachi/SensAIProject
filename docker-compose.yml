@@ -1,0 +1,98 @@
+# ═══════════════════════════════════════════════════════════════
+# SensAI — Docker Compose (local demo / hackathon deployment)
+# ═══════════════════════════════════════════════════════════════
+# Usage:
+#   cp .env.docker .env                # edit secrets
+#   docker compose up --build
+#
+# Services:
+#   db        → PostgreSQL 16
+#   backend   → FastAPI + Uvicorn (port 8000)
+#   frontend  → Next.js production build (port 3000)
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  # ─────────────────────────────────────────────────
+  # PostgreSQL 16 — persistent volume
+  # ─────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: sensai_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sensai_db}
+      POSTGRES_USER: ${POSTGRES_USER:-sensai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sensai_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"          # expose for local inspection only; remove in prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sensai} -d ${POSTGRES_DB:-sensai_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - sensai_net
+
+  # ─────────────────────────────────────────────────
+  # FastAPI Backend — migrations + seed on startup
+  # ─────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: sensai_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-sensai}:${POSTGRES_PASSWORD:-sensai_secret}@db:5432/${POSTGRES_DB:-sensai_db}
+      SECRET_KEY: ${SECRET_KEY:-change-me-to-a-long-random-secret}
+      CORS_ORIGINS: '["http://localhost:3000","http://frontend:3000"]'
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source for live reload in dev mode (override in dev compose)
+      - ./app:/app/app:ro
+    networks:
+      - sensai_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────
+  # Next.js Frontend — production build
+  # ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    container_name: sensai_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    networks:
+      - sensai_net
+
+# ─────────────────────────────────────────────────
+# Volumes & Networks
+# ─────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  sensai_net:
+    driver: bridge

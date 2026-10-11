@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────────────────────
+# Stage 1 — Python dependencies (build layer)
+# ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# System dependencies for psycopg2 and cryptography
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+# ─────────────────────────────────────────────────────────────
+# Stage 2 — Runtime image
+# ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+# Runtime system deps
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application source
+COPY app/ ./app/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
+COPY data_analysis/ ./data_analysis/
+
+# Entrypoint script: run migrations then start API
+COPY docker/backend-entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+# Non-root user for security
+RUN useradd -m -u 1000 sensai && chown -R sensai:sensai /app
+USER sensai
+
+EXPOSE 8000
+
+ENTRYPOINT ["./entrypoint.sh"]
