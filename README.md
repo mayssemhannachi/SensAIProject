@@ -1,295 +1,279 @@
-# SensAI — rééducation motrice pédiatrique par le jeu
+# SensAI — Pediatric Motor Rehabilitation Through Gamified AI
 
-Des **jeux de rééducation** pilotés par la **webcam** (vision par ordinateur, MediaPipe)
-pour les enfants, et un **espace thérapeute** qui prescrit les jeux, règle chaque exercice
-et analyse la progression de chaque enfant.
+SensAI is an AI-powered pediatric rehabilitation platform combining **webcam-based computer vision games** (MediaPipe, Phaser) for children and a comprehensive **clinical workspace** for therapists to prescribe exercises, calibrate motion thresholds, and track longitudinal motor recovery metrics.
 
-Ce dépôt contient **toute la plateforme, déjà connectée** : backend, base de données, site,
-jeux et dashboard thérapeute. Après le clonage, il suffit de suivre les étapes ci-dessous :
-aucune modification de code n'est nécessaire.
+This repository contains the **complete, fully integrated platform**: backend REST API, database schemas and migrations, child gaming portal, and the clinical analytics dashboard.
 
 ---
 
-## Sommaire
+## Table of Contents
 
-1. [Ce qu'il faut installer avant](#1-ce-quil-faut-installer-avant)
-2. [Installation (une seule fois)](#2-installation-une-seule-fois)
-3. [Lancer la plateforme](#3-lancer-la-plateforme)
-4. [Le parcours complet](#4-le-parcours-complet)
-5. [Architecture](#5-architecture)
-6. [Structure du dépôt](#6-structure-du-dépôt)
-7. [Installation manuelle (sans les scripts)](#7-installation-manuelle-sans-les-scripts)
-8. [Problèmes fréquents](#8-problèmes-fréquents)
-9. [Ajouter un nouveau jeu](#9-ajouter-un-nouveau-jeu)
-10. [Équipe](#10-équipe)
-
----
-
-## 1. Ce qu'il faut installer avant
-
-| Outil | Version | Lien | Remarque |
-|-------|---------|------|----------|
-| **Git** | récente | https://git-scm.com/downloads | pour cloner le dépôt |
-| **Python** | 3.11 ou plus (3.13 conseillé) | https://www.python.org/downloads/ | Windows : cocher **« Add python.exe to PATH »** |
-| **Node.js** | 20 LTS ou plus (22 conseillé) | https://nodejs.org | version **LTS** |
-| **PostgreSQL** | 14 ou plus (16 conseillé) | https://www.postgresql.org/download/ | **retenir le mot de passe** de l'utilisateur `postgres` choisi pendant l'installation |
-
-Une **webcam** et une **connexion Internet** sont nécessaires pour jouer avec la caméra
-(les modèles de détection sont téléchargés au lancement du jeu). Sans caméra, les jeux
-se jouent aussi **au clavier**.
+1. [Overview & Highlights](#1-overview--highlights)
+2. [Prerequisites](#2-prerequisites)
+3. [Quick Start (One-Click Installation & Launch)](#3-quick-start)
+4. [Demo Accounts](#4-demo-accounts)
+5. [The Full User Journey](#5-the-full-user-journey)
+6. [Specialties & Available Games](#6-specialties--available-games)
+7. [System Architecture](#7-system-architecture)
+8. [Repository Structure](#8-repository-structure)
+9. [Manual Setup (Alternative)](#9-manual-setup)
+10. [Troubleshooting & FAQ](#10-troubleshooting--faq)
+11. [Adding a New Game](#11-adding-a-new-game)
+12. [Project Team & Credits](#12-project-team--credits)
 
 ---
 
-## 2. Installation (une seule fois)
+## 1. Overview & Highlights
 
-```powershell
-# Dépôt de l'équipe (branche de la plateforme complète)
-git clone -b integration/plateforme-complete https://github.com/mayssemhannachi/SensAI.git
+- **Child-Friendly Computer Vision**: Real-time pose, face-mesh, and hand tracking directly in the browser via MediaPipe. No specialized sensors or wearable hardware required—only a standard webcam.
+- **Multidisciplinary Support**: Supports both **Physiotherapy** (*kinésithérapie*) and **Occupational Therapy** (*ergothérapie*), with isolated patient rosters and tailored game catalogs.
+- **Clinically Actionable Analytics**: Automated detection of compensatory movements (e.g., shoulder shrugging, torso twisting, wrong arm usage), range-of-motion measurements, speed, and endurance tracking.
+- **Safe & Engaging**: Features real-time guidance prompts, an immediate **"I feel pain / Stop"** emergency trigger, and self-evaluations (pain scale and perceived effort).
+- **Offline / Keyboard Fallback**: All games support keyboard or mouse input for children unable to use a webcam or during testing.
+
+---
+
+## 2. Prerequisites
+
+| Tool | Recommended Version | Download Link | Notes |
+|---|---|---|---|
+| **Git** | Latest | [git-scm.com](https://git-scm.com/downloads) | For cloning the repository |
+| **Python** | 3.11+ (3.13 recommended) | [python.org](https://www.python.org/downloads/) | On Windows, ensure **"Add python.exe to PATH"** is checked |
+| **Node.js** | 20 LTS+ (22 recommended) | [nodejs.org](https://nodejs.org) | Long-Term Support (LTS) release |
+| **PostgreSQL** | 14+ (16 recommended) | [postgresql.org](https://www.postgresql.org/download/) | Remember the `postgres` superuser password |
+
+> **Hardware & Connectivity**: A webcam and internet connection are needed to run MediaPipe models on initial load.
+
+---
+
+## 3. Quick Start
+
+### Step 1: Clone the Repository
+```bash
+git clone https://github.com/mayssemhannachi/SensAI.git
 cd SensAI
 ```
 
-(Depuis une copie du projet publiée sur un autre dépôt : `git clone <adresse du dépôt>`,
-puis entrer dans le dossier cloné.)
+### Step 2: One-Click Installation
+- **macOS / Linux**:
+  ```bash
+  chmod +x installer.sh demarrer.sh
+  ./installer.sh
+  ```
+- **Windows**:
+  Double-click `installer.bat` (or run `./installer.bat` in PowerShell).
 
-Puis :
+The installer will prompt for your local PostgreSQL password, then automatically:
+1. Verify Python & Node.js environments.
+2. Create the Python virtual environment (`.venv`) and install backend & dashboard dependencies.
+3. Generate `.env` with a secure random secret key, create the `sensai_db` database, and apply Alembic migrations.
+4. Install frontend npm dependencies and configure `frontend/.env.local`.
+5. Seed initial clinical demo data.
 
-- **Windows** : double-cliquer sur **`installer.bat`**
-- **Mac / Linux** : `./installer.sh`
+### Step 3: Run the Platform
+- **macOS / Linux**:
+  ```bash
+  ./demarrer.sh
+  ```
+- **Windows**:
+  Double-click `demarrer.bat`.
 
-Le script demande le **mot de passe PostgreSQL**, puis fait tout le reste :
-
-| Étape | Ce qui est fait |
-|-------|-----------------|
-| 1 | vérifie Python et Node.js |
-| 2 | crée l'environnement Python `.venv` et installe les dépendances (backend + dashboard) |
-| 3 | crée le fichier `.env` (connexion à la base + clé secrète aléatoire), crée la base `sensai_db` et ses tables |
-| 4 | installe les dépendances du site (`frontend/`) et crée `frontend/.env.local` |
-| 5 | crée le **compte de démonstration** (thérapeute + 15 patients avec ~8 semaines de séances) |
-
-Comptez **5 à 10 minutes** la première fois. Le script peut être relancé sans risque :
-il ne refait que ce qui manque.
-
----
-
-## 3. Lancer la plateforme
-
-- **Windows** : double-cliquer sur **`demarrer.bat`**
-  → trois fenêtres s'ouvrent (backend, dashboard, site) puis le navigateur s'ouvre sur le site.
-  Pour arrêter : fermer les trois fenêtres « SensAI - … ».
-  Si la plateforme n'est pas encore installée, `demarrer.bat` lance d'abord l'installation.
-  Si une ancienne version tourne encore (autre dossier, ancien terminal), elle est arrêtée et remplacée.
-- **Mac / Linux** : `./demarrer.sh` → `Ctrl + C` pour tout arrêter.
-
-On n'ouvre qu'**une seule adresse : http://localhost:3000**. Le site envoie chacun au bon endroit.
-
-| Service | Adresse | Rôle |
-|---------|---------|------|
-| Site SensAI | http://localhost:3000 | accueil, connexion, inscription, espace enfant, jeux |
-| Dashboard thérapeute | http://localhost:8501 | patients, prescription des jeux, analyses (ouvert automatiquement après la connexion) |
-| API (backend) | http://127.0.0.1:8000/docs | documentation interactive de l'API |
-
-### Comptes de démonstration
-
-| Rôle | E-mail | Mot de passe |
-|------|--------|--------------|
-| Kinésithérapeute (15 patients suivis) | `demo@sensai.tn` | `demo1234` |
-| Parent de Salma (Le Hibou, Le Gardien des Lucioles) | `salma.parent@sensai.tn` | `demo1234` |
-| Ergothérapeute (5 patients suivis) | `ergo@sensai.tn` | `demo1234` |
-| Parent d'Ines (La Danse des Lucioles) | `ines.parent@sensai.tn` | `demo1234` |
+Once running, access the platform at:
+- **Main Web Application**: [http://localhost:3000](http://localhost:3000)
+- **Therapist Analytics Dashboard**: [http://localhost:8501](http://localhost:8501)
+- **Interactive Backend API Docs**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ---
 
-## 4. Le parcours complet
+## 4. Demo Accounts
 
-```
- Thérapeute                         Parent / enfant                      Thérapeute
- ──────────                         ───────────────                      ──────────
- /login → son dashboard             /login → « Activer mon compte »      ↻ Actualiser
- « Nouveau patient » :              code + e-mail + mot de passe         la séance apparaît :
-  identité, diagnostic,      code    → espace de l'enfant         séance  scores, amplitude,
-  jeu prescrit + réglages   ──────►  → joue (caméra ou clavier) ───────►  compensations,
-  → code d'activation                → douleur / effort ressentis         douleur, alertes
-```
+The platform uses a single unified login page at `http://localhost:3000/login`. Users are automatically routed based on their role:
 
-1. **Une seule page de connexion** pour tout le monde. Un thérapeute arrive sur son dashboard,
-   un parent arrive dans l'espace de son enfant.
-2. **Le thérapeute** crée un compte (`/register`), puis un patient avec son diagnostic, le jeu
-   prescrit et ses réglages. Un **code d'activation à 6 caractères** est généré
-   (valable 30 jours, utilisable une seule fois).
-3. **Le parent** active le compte de l'enfant avec ce code (lien « Activer mon compte » sur la
-   page de connexion). Il ne voit que les données de son enfant : c'est le backend qui le garantit.
-4. **L'enfant joue** chez lui. À la fin, il indique sa douleur et son effort, et la séance est
-   envoyée automatiquement.
-5. **Le thérapeute** retrouve la séance et ses analyses dans le dashboard, et peut modifier les
-   réglages à tout moment.
-
-### Espaces par spécialité
-
-SensAI est une plateforme de **rééducation de l'enfant** ouverte à plusieurs spécialités.
-À l'inscription, le professionnel choisit sa spécialité ; elle détermine **le catalogue de jeux**
-qu'il peut prescrire. Tout le reste est commun : dashboard, fiche patient, diagnostic, codes
-d'activation, espace enfant, analyses et alertes.
-
-| Spécialité | Jeux jouables | Ce qui est travaillé |
-|------------|---------------|----------------------|
-| **Kinésithérapeute** | Le Hibou, Le Gardien des Lucioles | mobilité (rotation du cou, élévation du bras / épaule) |
-| **Ergothérapeute** | La Danse des Lucioles, Le Gardien du Château | mémoire de séquence, planification, coordination œil-main et des deux mains ; attention, contrôle de l'impulsivité, latéralité |
-
-Chaque compte ne voit que ses propres patients. La spécialité est enregistrée avec le compte
-(champ `specialty`, table `users`) et chaque jeu appartient à une spécialité (table `games`) ;
-le backend refuse d'attribuer un jeu d'une autre spécialité. D'autres spécialités
-(orthophonie, psychomotricité…) peuvent être ajoutées de la même façon. Les comptes existants
-avant cette évolution sont dans l'espace kinésithérapeute.
-
-### Les jeux disponibles
-
-| Jeu | Mouvement | Réglages du thérapeute | Mesures analysées |
-|-----|-----------|------------------------|-------------------|
-| **Le Hibou** | rotation cervicale (tête) | angle cible, maintien, répétitions, vitesse, limite de sécurité, sensibilité caméra, inversion du sens | rotation gauche / droite, symétrie, maintien, fluidité, compensations (tête penchée) |
-| **Le Gardien des Lucioles** | abduction de l'épaule (bras) | bras atteint, mode hémiplégie / bilatéral, seuil d'abduction, extension du coude, tolérance de l'autre bras, nombre de lucioles, maintien | abduction max, pic moyen, compensations (autre bras levé) |
-| **La Danse des Lucioles** (ergothérapie) | l'enfant refait avec ses mains la séquence de fleurs montrée par Léo | main (droite, gauche, au choix, à tour de rôle), niveau de départ, nombre de danses, taille des fleurs | plus longue séquence, erreurs d'ordre, aides de Léo, temps par fleur |
-| **Le Gardien du Château** (ergothérapie) | debout, l'enfant fait le geste de chaque personnage (fée bleue : bras droit, fée rose : bras gauche, étoile, couronne, dragon) et se fige comme une statue devant l'ogre | les 3 défis, nombre d'essais, part des défis (le reste : l'ogre) | défis réussis (attention), statues réussies (impulsivité), temps de réaction et variabilité, oublis, mauvais gestes, réussite début / fin de partie |
-
-Tous les jeux enregistrent aussi le score, le taux de réussite, la durée, la **douleur** et
-l'**effort** déclarés par l'enfant. Le bouton **« J'ai mal / Stop »** arrête la séance à tout moment.
+| Role / Context | Email | Password | Destination |
+|---|---|---|---|
+| **Occupational Therapist (Ergo)** | `ergo.demo@sensai.tn` | `demo1234` | Clinical Analytics Space (`:8501`) |
+| **Physiotherapist (Kiné)** | `demo@sensai.tn` | `demo1234` | Clinical Analytics Space (`:8501`) |
+| **Patient — Ergo** (*Maya Demo*) | `ergo.patient@sensai.tn` | `demo1234` | Child Dashboard (`/dashboard`) |
+| **Patient — Kiné** (*Salma Ben Ali*) | `salma.parent@sensai.tn` | `demo1234` | Child Dashboard (`/dashboard`) |
 
 ---
 
-## 5. Architecture
+## 5. The Full User Journey
 
 ```
-┌──────────────────────────┐      ┌─────────────────────────┐      ┌──────────────┐
-│ Site SensAI (Next.js)    │ JWT  │ API FastAPI             │ SQL  │ PostgreSQL   │
-│ frontend/  :3000         │─────►│ app/  :8000             │─────►│ sensai_db    │
-│ connexion, espace enfant,│      │ comptes, patients, jeux,│      └──────────────┘
-│ jeux + MediaPipe (webcam)│      │ réglages, séances       │
-└────────────┬─────────────┘      └────────────▲────────────┘
-             │ connexion unique (jeton)        │ JWT
-             ▼                                 │
-┌──────────────────────────────────────────────┴──┐
-│ Dashboard thérapeute (Streamlit)  data_analysis/ │
-│ :8501 — patients, prescription, analyses, alertes│
-└──────────────────────────────────────────────────┘
+  Therapist                        Parent / Child                       Therapist
+  ─────────                        ──────────────                       ─────────
+  /login → Dashboard               /login → "Activate account"          Refresh Dashboard
+  "New Patient":                   Code + Email + Password              Session appears:
+   • Identity & diagnosis          → Child gaming portal                • Scores & accuracy
+   • Game prescription   Code       → Plays with webcam/keyboard  Data  • Range of motion
+   • Calibration target ───────►    → Reports pain & effort     ──────► • Compensations
+   → 6-char Activation Code                                             • Alerts & evolution
 ```
 
-- **Backend** : FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, authentification JWT, rôles
-  `therapist` et `patient`.
-- **Site** : Next.js 16, React 19, Tailwind 4. Le jeu Le Gardien des Lucioles utilise
-  Phaser + MediaPipe Pose, Le Hibou utilise MediaPipe FaceMesh.
-- **Dashboard** : Streamlit, pandas, Plotly. Détails, règles d'analyse et contrat de données
-  des jeux : [`data_analysis/README.md`](data_analysis/README.md).
+1. **Therapist Onboarding**: The therapist signs up, chooses their specialty, creates patient profiles with diagnoses, and configures exercise parameters.
+2. **Patient Activation**: The therapist provides the parent with an alphanumeric 6-character activation code (valid for 30 days). The parent activates their account at `/activate`.
+3. **Gamified Therapy**: The child logs into their portal, sees only their prescribed games, and completes guided sessions with real-time feedback.
+4. **Session Reporting**: Upon completion, the child submits self-evaluations (pain scale 0–5, perceived effort 0–5). The session data streams directly to the backend.
+5. **Clinical Monitoring**: The therapist analyzes longitudinal progress charts, compensation rates, and session history in the Streamlit analytics workspace.
 
 ---
 
-## 6. Structure du dépôt
+## 6. Specialties & Available Games
+
+### By Specialty
+
+| Specialty | Prescribed Games | Clinical Focus |
+|---|---|---|
+| **Physiotherapy** (*Kinésithérapie*) | *The Owl*, *Guardian of the Fireflies* | Cervical range of motion, head rotation, shoulder abduction/flexion |
+| **Occupational Therapy** (*Ergothérapie*) | *Dance of the Fireflies*, *Guardian of the Castle* | Visual memory, sequence planning, bilateral motor coordination, impulse inhibition |
+
+### Game Details
+
+| Game | Movement & Action | Configurable Parameters | Tracked Metrics |
+|---|---|---|---|
+| **The Owl** (*Le Hibou*) | Cervical rotation (head turning) | Target angle, hold duration, repetitions, speed, safety limit, camera sensitivity, inverted direction | Left/right rotation angle, symmetry, stability, head tilt compensation |
+| **Guardian of the Fireflies** (*Gardien des Lucioles*) | Shoulder elevation & abduction (arm raising) | Affected arm (L/R/Bilateral), elevation threshold, elbow extension minimum, resting tolerance | Peak angle, average peak, compensation count (other arm or trunk tilt) |
+| **Dance of the Fireflies** (*Danse des Lucioles*) | Sequenced target tapping (flowers) | Active hand (Right, Left, Free, Alternating), initial sequence length, flower size | Longest sequence, ordering errors, hints used, mean step time |
+| **Guardian of the Castle** (*Gardien du Château*) | Posture & gesture control (Fairies, Star, Crown, Dragon, Statue freeze) | Chosen gesture challenges, trial count, go/no-go ratio | Challenge success rate, statue inhibition success, reaction times, error breakdown |
+
+---
+
+## 7. System Architecture
+
+```
+┌─────────────────────────────────┐        ┌──────────────────────────────┐        ┌──────────────┐
+│  SensAI Web Portal (Next.js 16) │  JWT   │  FastAPI Backend             │  SQL   │  PostgreSQL  │
+│  frontend/  :3000               │───────►│  app/  :8000                 │───────►│  sensai_db   │
+│  • Auth, Child Portal, Games    │        │  • Accounts, Patients, Games │        └──────────────┘
+│  • MediaPipe & Phaser Engines   │        │  • Prescriptions & Sessions  │
+└────────────────┬────────────────┘        └──────────────▲───────────────┘
+                 │ Single Sign-On (Token)                 │ JWT
+                 ▼                                        │
+┌─────────────────────────────────────────────────────────┴────┐
+│  Therapist Clinical Analytics (Streamlit)  data_analysis/    │
+│  :8501 — Patient Roster, Prescriptions, Longitudinal Charts  │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Frontend**: Next.js 16 (App Router), React 19, Vanilla CSS & Tailwind CSS tokens, Lucide icons.
+- **Computer Vision & Games**: MediaPipe (PoseLandmarker Lite, FaceMesh, HandLandmarker), Phaser 3.80.
+- **Backend**: FastAPI, SQLAlchemy 2 (async-compatible declarative models), Alembic migrations, PostgreSQL, Pydantic v2, Passlib (bcrypt), python-jose (JWT).
+- **Analytics & BI**: Streamlit, pandas, Plotly, NumPy.
+
+---
+
+## 8. Repository Structure
 
 ```
 SensAI/
-├── installer.bat / installer.sh   # installation en une commande
-├── demarrer.bat  / demarrer.sh    # lancement des 3 services
-├── scripts/                       # installer.py, demarrer.py (logique des deux commandes)
-├── app/                           # backend FastAPI (routes, modèles, services)
-├── alembic/                       # migrations de la base (tables + catalogue de jeux)
-├── requirements.txt               # dépendances du backend
-├── .env.example                   # modèle de configuration (le vrai .env est créé par l'installateur)
-├── data_analysis/                 # dashboard thérapeute, analyses, notebooks, tests
-│   └── scripts/seed_backend.py    # données de démonstration
-├── frontend/                      # site SensAI (Next.js) + jeux
-│   └── public/games/              # jeux HTML : gardien-lucioles, danse-lucioles, gardien-chateau (compilé)
-├── games-src/gardien-chateau/     # sources du Gardien du Château (TypeScript, Vite) — voir ci-dessous
-└── docs/README_backend.md         # documentation détaillée du backend
+├── installer.bat / installer.sh   # One-click installation script
+├── demarrer.bat  / demarrer.sh    # One-click multi-service launcher
+├── scripts/                       # Automation logic (installer.py, demarrer.py)
+├── app/                           # FastAPI application (routers, services, models, schemas)
+├── alembic/                       # Database schema migrations
+├── requirements.txt               # Backend dependencies
+├── .env.example                   # Environment configuration template
+├── data_analysis/                 # Clinical Streamlit dashboard & BI analytics
+│   └── scripts/seed_backend.py    # Demo data generator
+├── frontend/                      # Next.js web application
+│   ├── app/                       # App Router pages (/login, /dashboard, /activate, etc.)
+│   ├── components/                # UI design system, game wrappers, layout sections
+│   ├── lib/                       # API clients, game specs, auth helpers
+│   └── public/games/              # Embedded game bundles (gardien-lucioles, danse-lucioles, etc.)
+├── games-src/gardien-chateau/     # TypeScript source code for Guardian of the Castle (Vite + Phaser)
+└── docs/                          # Additional architectural and backend documentation
 ```
-
-Les fichiers `.env`, `.venv/`, `frontend/node_modules/` et `frontend/.env.local` sont créés
-sur chaque ordinateur et **ne sont jamais publiés** (ils sont dans `.gitignore`).
 
 ---
 
-## 7. Installation manuelle (sans les scripts)
+## 9. Manual Setup
+
+If you prefer setting up the components manually without the automation scripts:
 
 <details>
-<summary>Afficher les commandes (Windows PowerShell)</summary>
+<summary>Click to view manual installation steps</summary>
 
-```powershell
-# 1. Backend + dashboard
+### 1. Backend & Analytics Setup
+```bash
+# Create and activate Python virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-pip install -r data_analysis\requirements.txt
-Copy-Item .env.example .env      # puis remplacer YOUR_PASSWORD, kinekids_db et SECRET_KEY
-# créer la base indiquée dans .env (pgAdmin ou : psql -U postgres -c "CREATE DATABASE sensai_db;")
-python -m alembic upgrade head
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# 2. Site
+# Install dependencies
+pip install -r requirements.txt
+pip install -r data_analysis/requirements.txt
+
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your PostgreSQL credentials
+
+# Run database migrations
+python -m alembic upgrade head
+```
+
+### 2. Frontend Setup
+```bash
 cd frontend
 npm install
-Copy-Item .env.example .env.local
+cp .env.example .env.local
 cd ..
-
-# 3. Lancer (3 terminaux, .venv activé pour les deux premiers)
-uvicorn app.main:app --port 8000                                   # terminal 1, à la racine
-cd data_analysis; streamlit run dashboard/app.py                   # terminal 2
-cd frontend; npm run dev                                           # terminal 3
-
-# 4. Données de démonstration (backend lancé)
-cd data_analysis; python scripts/seed_backend.py --register
 ```
+
+### 3. Launch Services (Run in 3 separate terminals)
+```bash
+# Terminal 1: FastAPI Backend
+uvicorn app.main:app --port 8000 --reload
+
+# Terminal 2: Streamlit Dashboard
+cd data_analysis && streamlit run dashboard/app.py --server.port 8501
+
+# Terminal 3: Next.js Frontend
+cd frontend && npm run dev
+```
+
+### 4. Seed Demo Data (Optional)
+```bash
+cd data_analysis
+python scripts/seed_backend.py --register
+```
+
 </details>
 
 ---
 
-## 8. Problèmes fréquents
+## 10. Troubleshooting & FAQ
 
-| Problème | Solution |
-|----------|----------|
-| `Connexion à PostgreSQL impossible` | PostgreSQL n'est pas démarré (Windows : Services → `postgresql-x64-…` → Démarrer) ou le mot de passe est faux. Supprimer `.env` et relancer `installer.bat`. |
-| `Python n'est pas installé` | Réinstaller Python en cochant **Add python.exe to PATH**. |
-| `Node.js n'est pas installé` | Installer Node.js LTS, puis **fermer et rouvrir** la fenêtre. |
-| Une fenêtre « SensAI - … » affiche une erreur | Lire le message, puis la fermer et relancer `demarrer.bat`. Un port déjà utilisé signifie que le service tourne déjà. |
-| La caméra ne démarre pas | Autoriser la caméra dans le navigateur, vérifier la connexion Internet, fermer les autres applications qui utilisent la webcam. Sinon, jouer au clavier. |
-| Le hibou tourne dans le mauvais sens | Dashboard → fiche du patient → Jeux et réglages → activer « Inverser le sens de rotation ». |
-| Le site ne répond pas mais il faut accéder au dashboard | Connexion directe de secours : http://localhost:8501/?direct=1 |
-| Après une mise à jour (`git pull`) | Relancer `installer.bat` : il applique les nouvelles migrations et dépendances. |
-| Repartir d'une base vide | Supprimer la base `sensai_db` (pgAdmin), puis relancer `installer.bat`. |
-
----
-
-## 9. Ajouter un nouveau jeu
-
-1. **Backend** : une migration Alembic qui ajoute le jeu (nom, slug) dans la table `games`.
-2. **Site** : une page `frontend/app/dashboard/game/<slug>/` ; déclarer le jeu dans
-   `frontend/lib/games.ts` (`playable: true`). Le jeu lit ses réglages avec `GET /me/games`
-   et envoie la séance avec `POST /me/sessions`.
-3. **Dashboard** : ajouter le slug dans `PLAYABLE_GAME_SLUGS` et ses réglages par défaut dans
-   `data_analysis/dashboard/utils/data.py`, ses champs dans
-   `data_analysis/dashboard/components/game_settings.py`, sa section d'analyse dans
-   `data_analysis/dashboard/pages/patient_detail.py`.
-
-Le détail des mesures attendues est dans [`data_analysis/README.md`](data_analysis/README.md).
-
-**Le Gardien du Château** est écrit en TypeScript : ses sources sont dans
-`games-src/gardien-chateau/` et la version compilée est déjà dans
-`frontend/public/games/gardien-chateau/` (rien à faire pour jouer). Pour modifier le jeu :
-
-```bash
-cd games-src/gardien-chateau
-npm install
-npm test          # tests de la logique (gestes, mesures, difficulté)
-npm run build     # recompile dans frontend/public/games/gardien-chateau/
-```
+- **Cannot connect to PostgreSQL**: Ensure PostgreSQL is running locally (`pg_isready` or Windows Services). Verify that credentials in `.env` match your local database user.
+- **Webcam permission denied**: Grant browser camera access in your browser settings. Ensure no other applications (Zoom, Teams) are locking the webcam.
+- **Camera is mirrored / inverted**: In *The Owl*, head rotation direction can be inverted in the therapist game settings (toggle *Invert rotation direction*).
+- **Phaser Game Compilation**: To rebuild *Guardian of the Castle* after making source modifications:
+  ```bash
+  cd games-src/gardien-chateau
+  npm install
+  npm test
+  npm run build  # Compiles directly into frontend/public/games/gardien-chateau/
+  ```
 
 ---
 
-## 10. Équipe
+## 11. Adding a New Game
 
-| Partie | Contribution |
-|--------|--------------|
-| Site SensAI (UI / UX) | Mayssem — branche `sensAI-ui` |
-| Backend FastAPI | branche `backend-fastapi` |
-| Jeux Le Gardien des Lucioles et La Danse des Lucioles | Maram — branche `maram-game` |
-| Jeu Le Hibou (prototype Python / OpenCV) | Chahed — branche `feature/game-hibou` |
-| Jeu Le Gardien du Château (Phaser + MediaPipe) | Chahed — branche `feature/gardien-du-chateau` |
-| Data Analysis & dashboard thérapeute, intégration de la plateforme | branche `feature/dashboard-analytics` |
+1. **Database Migration**: Create an Alembic migration adding the game entry (name, slug, specialty) to the `games` table.
+2. **Frontend Route**: Add a page under `frontend/app/dashboard/game/<slug>/` and register its descriptor in `frontend/lib/games.ts` (`playable: true`).
+3. **Session Reporting**: Fetch prescribed settings via `GET /me/games` and submit recorded outcomes via `POST /me/sessions`.
+4. **Therapist Analytics**: Register the game slug in `PLAYABLE_GAME_SLUGS` in `data_analysis/dashboard/utils/data.py` and implement configuration widgets in `data_analysis/dashboard/components/game_settings.py`.
 
-Cette branche (`integration/plateforme-complete`) rassemble toutes les parties connectées.
-Les branches de chacun restent inchangées.
+---
+
+## 12. Project Team & Credits
+
+| Domain | Contribution & Origin Branch |
+|---|---|
+| **SensAI Web Platform & UI/UX** | Mayssem — `sensAI-ui` |
+| **FastAPI Backend & Security** | `backend-fastapi` |
+| **Guardian & Dance of the Fireflies** | Maram — `maram-game` |
+| **The Owl & Guardian of the Castle** | Chahed — `feature/game-hibou`, `feature/gardien-du-chateau` |
+| **Clinical BI Analytics & Platform Integration** | `feature/dashboard-analytics` |
+
+The `integration/plateforme-complete` branch unifies all subsystems into a single production-ready platform.
